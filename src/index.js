@@ -1,12 +1,12 @@
-module.exports = WebpackBabelExtraHelpers;
+module.exports = WebpackBabelExternalHelpers;
 
-function WebpackBabelExtraHelpers(options = {}) {
+function WebpackBabelExternalHelpers(options = {}) {
     verifyOptions(options);
 
     this._options = options;
 }
 
-WebpackBabelExtraHelpers.prototype.apply = function (compiler) {
+WebpackBabelExternalHelpers.prototype.apply = function (compiler) {
     processOptions.call(this, compiler);
 };
 
