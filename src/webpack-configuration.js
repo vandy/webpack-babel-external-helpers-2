@@ -36,12 +36,14 @@ function getLoaders(configuration) {
 
 function matchLoaderByAlias(loaderParams, aliases) {
     return extractLoaderNames(loaderParams).some(loaderName => {
+        loaderName = loaderName.toLowerCase();
+
         return aliases.some(alias => {
             if (alias instanceof RegExp) {
                 return alias.test(loaderName);
             }
 
-            return alias === loaderName;
+            return alias.toLowerCase() === loaderName;
         });
     });
 }
