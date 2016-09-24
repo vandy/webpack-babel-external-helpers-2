@@ -10,6 +10,13 @@ function WebpackBabelExternalHelpers(options = {}) {
 
 WebpackBabelExternalHelpers.prototype.apply = function (compiler) {
     this._options.process(compiler);
-    modifyWebpackConfiguration(compiler, this._options);
+    modifyConfiguration(compiler, this._options);
     injectHelpersModule(compiler, this._options);
 };
+
+function modifyConfiguration(compiler, pluginOptions) {
+    let configurationModified = modifyWebpackConfiguration(compiler, pluginOptions);
+    if (pluginOptions.get('strict') && !configurationModified) {
+        throw new Error('Plugin hasn\'t modified the configuration. No babel loaders found.');
+    }
+}

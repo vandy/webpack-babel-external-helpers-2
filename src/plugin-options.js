@@ -8,6 +8,7 @@ function PluginOptions(options) {
     this._options = {
         entries: [],
         aliases: [],
+        strict: false,
     };
 }
 
@@ -30,6 +31,10 @@ PluginOptions.prototype.process = function (compiler) {
 
     if (this._rawOptions.aliases) {
         this._options.aliases = this._rawOptions.aliases;
+    }
+
+    if (this._rawOptions.strict != null) {
+        this._options.strict = Boolean(this._rawOptions.strict);
     }
 };
 
