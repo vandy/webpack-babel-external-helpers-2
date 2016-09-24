@@ -2,7 +2,7 @@ const {isObject, ensureArray} = require('./helpers');
 
 module.exports = function modifyWebpackConfiguration(compiler, pluginOptions) {
     let configuration = compiler.options;
-    if (includeExternalHelpersPlugin(configuration)) {
+    if (includeExternalHelpersPlugin(configuration, pluginOptions)) {
         fixConfigurationEntry(configuration, pluginOptions.get('entries'));
 
         return true;
@@ -11,16 +11,16 @@ module.exports = function modifyWebpackConfiguration(compiler, pluginOptions) {
     return false;
 };
 
-function includeExternalHelpersPlugin(configuration) {
-    let aliases = getBabelLoaderAliases(configuration);
+function includeExternalHelpersPlugin(configuration, pluginOptions) {
+    let aliases = getBabelLoaderAliases(pluginOptions);
     let loadersParams = getBabelLoaders(configuration, aliases);
     loadersParams.forEach(loaderParams => addQueryParam(loaderParams, aliases));
 
     return loadersParams.length > 0;
 }
 
-function getBabelLoaderAliases(configuration) {
-    return [/(^|!)babel(-loader)?/i];
+function getBabelLoaderAliases(pluginOptions) {
+    return [/(?:^|!)babel(?:(?:-\w+)?-loader)?$/i].concat(pluginOptions.get('aliases'));
 }
 
 function getBabelLoaders(configuration, aliases) {

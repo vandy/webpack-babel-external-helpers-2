@@ -7,6 +7,7 @@ function PluginOptions(options) {
     this._rawOptions = options;
     this._options = {
         entries: [],
+        aliases: [],
     };
 }
 
@@ -26,6 +27,10 @@ PluginOptions.prototype.process = function (compiler) {
     if (this._rawOptions.whitelist) {
         this._options.whitelist = parseWhitelist(this._rawOptions.whitelist);
     }
+
+    if (this._rawOptions.aliases) {
+        this._options.aliases = this._rawOptions.aliases;
+    }
 };
 
 function verifyOptions(options) {
@@ -37,6 +42,9 @@ function verifyOptions(options) {
     }
     if (options.whitelist && !isStringOrArray(options.whitelist)) {
         throw new Error('Whitelist option should be a String or Array');
+    }
+    if (options.aliases && !Array.isArray(options.aliases)) {
+        throw new Error('Aliases option should be an Array');
     }
 }
 
