@@ -13,7 +13,8 @@
   "repository": "vandy/webpack-babel-external-helpers-2",
   "main": "src/index.js",
   "dependencies": {
-    "babel-plugin-external-helpers": "^6.8.0"
+    "babel-plugin-external-helpers": "^6.8.0",
+    "qs": "^6.2.1"
   },
   "peerDependencies": {
     "babel-core": "6.x",
