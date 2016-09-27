@@ -1,4 +1,4 @@
-const {isObject, isStringOrArray, ensureArray} = require('./helpers');
+const {isObject, isStringOrArray, ensureArray} = require('./../helpers');
 
 module.exports = PluginOptions;
 

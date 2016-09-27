@@ -1,24 +1,13 @@
 const qs = require('qs');
-const {isObject, ensureArray} = require('./helpers');
+const {isObject} = require('../../helpers');
 
-module.exports = function modifyWebpackConfiguration(compiler, pluginOptions) {
-    let configuration = compiler.options;
-    if (includeExternalHelpersPlugin(configuration, pluginOptions)) {
-        fixConfigurationEntry(configuration, pluginOptions.get('entries'));
-
-        return true;
-    }
-
-    return false;
-};
-
-function includeExternalHelpersPlugin(configuration, pluginOptions) {
+module.exports = function modifyLoaders(configuration, pluginOptions) {
     let aliases = getBabelLoaderAliases(pluginOptions);
     let loadersParams = getBabelLoaders(configuration, aliases);
     loadersParams.forEach(loaderParams => addQueryParams(loaderParams, aliases));
 
     return loadersParams.length > 0;
-}
+};
 
 function getBabelLoaderAliases(pluginOptions) {
     return [/(?:^|!)babel(?:(?:-\w+)?-loader)?$/i].concat(pluginOptions.get('aliases'));
@@ -142,29 +131,4 @@ function injectQueryParamsToLoadersArray(loaderStrings, aliases) {
 
         return `${loaderName}?${queryString}`;
     });
-}
-
-function fixConfigurationEntry(configuration, onlyEntries) {
-    let entry = configuration && configuration.entry;
-    if (entry) {
-        ensureEntryPointIsArray(configuration, 'entry', onlyEntries);
-    }
-}
-
-function ensureEntryPointIsArray(container, entryName, onlyEntries) {
-    let entry = container[entryName];
-    if (typeof entry === 'string') {
-        if (!onlyEntries.length || onlyEntries.indexOf(entryName) > -1) {
-            replaceEntryString(container, entryName);
-        }
-
-        return;
-    }
-    if (isObject(entry)) {
-        Object.keys(entry).forEach(entryName => ensureEntryPointIsArray(entry, entryName, onlyEntries));
-    }
-}
-
-function replaceEntryString(obj, key) {
-    obj[key] = ensureArray(obj[key]);
 }
