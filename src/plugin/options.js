@@ -1,44 +1,22 @@
+const defaultOptions = require('./defaults');
 const {isObject, isStringOrArray, ensureArray} = require('./../helpers');
 
-module.exports = PluginOptions;
+let options = Object.create(null);
 
-function PluginOptions(options) {
-    verifyOptions(options);
-    this._rawOptions = options;
-    this._options = {
-        entries: [],
-        aliases: [],
-        strict: false,
-    };
-}
+exports.init = function (compiler, rawOptions = {}) {
+    verify(rawOptions);
+    update(compiler.options, rawOptions);
+};
 
-PluginOptions.prototype.get = function (name, defaultValue) {
-    if (name in this._options) {
-        return this._options[name];
+exports.get = function (name, defaultValue) {
+    if (name in options) {
+        return options[name];
     }
 
     return defaultValue;
 };
 
-PluginOptions.prototype.process = function (compiler) {
-    if (this._rawOptions.entries) {
-        this._options.entries = alignEntries(compiler.options, this._rawOptions.entries);
-    }
-
-    if (this._rawOptions.whitelist) {
-        this._options.whitelist = parseWhitelist(this._rawOptions.whitelist);
-    }
-
-    if (this._rawOptions.aliases) {
-        this._options.aliases = this._rawOptions.aliases;
-    }
-
-    if (this._rawOptions.strict != null) {
-        this._options.strict = Boolean(this._rawOptions.strict);
-    }
-};
-
-function verifyOptions(options) {
+function verify(options) {
     if (!isObject(options)) {
         throw new Error('Options should be an object.');
     }
@@ -53,7 +31,34 @@ function verifyOptions(options) {
     }
 }
 
-function alignEntries(configuration, optionsEntries) {
+function update(configuration, rawOptions) {
+    let overrideDefaults = processOptions(configuration, rawOptions, {
+        entries: alignEntries,
+        whitelist: parseWhitelist,
+        strict: Boolean,
+    });
+    options = defaultOptions.get(overrideDefaults);
+}
+
+function processOptions(configuration, rawOptions, handlers = {}) {
+    let result = Object.create(null);
+    Object.keys(rawOptions).forEach(optionName => {
+        let optionValue = rawOptions[optionName];
+        if (optionName in handlers) {
+            let handler = handlers[optionName];
+            if (typeof handler === 'function') {
+                optionValue = handler(optionValue, configuration);
+            } else {
+                optionValue = handler;
+            }
+        }
+        result[optionName] = optionValue;
+    });
+
+    return result;
+}
+
+function alignEntries(optionsEntries, configuration) {
     let resultEntries = [];
     let configurationEntry = configuration.entry;
     if (configurationEntry && isObject(configurationEntry)) {

@@ -1,22 +1,21 @@
-const PluginOptions = require('./plugin/options');
+const pluginOptionsController = require('./plugin/options');
 const webpackModification = require('./webpack-modification');
 
 module.exports = WebpackBabelExternalHelpers;
 
 function WebpackBabelExternalHelpers(options = {}) {
-    this._options = new PluginOptions(options);
+    this._options = options;
 }
 
 WebpackBabelExternalHelpers.prototype.apply = function (compiler) {
-    this._options.process(compiler);
-    modifyConfiguration(compiler, this._options);
+    pluginOptionsController.init(compiler, this._options);
+    modifyConfiguration(compiler);
 };
 
-function modifyConfiguration(compiler, pluginOptions) {
-    let configurationModified = webpackModification.modifyConfiguration(compiler, pluginOptions);
-    if (pluginOptions.get('strict') && !configurationModified) {
+function modifyConfiguration(compiler) {
+    let configurationModified = webpackModification.modifyConfiguration(compiler);
+    if (pluginOptionsController.get('strict') && !configurationModified) {
         throw new Error('Plugin hasn\'t modified the configuration. No babel loaders found.');
     }
-
-    webpackModification.injectModules(compiler, pluginOptions);
+    webpackModification.injectModules(compiler);
 }
