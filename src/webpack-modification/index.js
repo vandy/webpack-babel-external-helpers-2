@@ -4,16 +4,22 @@ const injectHelpersModule = require('./compilation/inject');
 const pluginOptionsController = require('../plugin/options');
 
 exports.modifyConfiguration = function (compiler) {
-    let configuration = compiler.options;
-    if (modifyLoaders(configuration, pluginOptionsController)) {
-        modifyEntry(configuration, pluginOptionsController.get('entries'));
+    let modified = modifyConfiguration(compiler.options);
+    if (!modified && pluginOptionsController.get('strict')) {
+        throw new Error('Webpack configuration wasn\'t modified. No babel loaders found.');
+    }
+    injectModules(compiler);
+};
 
-        return true;
+function modifyConfiguration(configuration) {
+    let loadersModified = modifyLoaders(configuration, pluginOptionsController);
+    if (loadersModified) {
+        modifyEntry(configuration, pluginOptionsController.get('entries'));
     }
 
-    return false;
-};
+    return loadersModified;
+}
 
-exports.injectModules = function (compiler) {
+function injectModules(compiler) {
     injectHelpersModule(compiler, pluginOptionsController);
-};
+}
