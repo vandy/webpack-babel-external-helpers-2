@@ -36,6 +36,7 @@ function update(configuration, rawOptions) {
         entries: alignEntries,
         whitelist: parseWhitelist,
         strict: Boolean,
+        aliases: aliases => aliases.filter(Boolean),
     });
     options = defaultOptions.get(overrideDefaults);
 }
