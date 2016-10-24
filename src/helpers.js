@@ -1,12 +1,12 @@
-module.exports.isObject = function (object) {
+exports.isObject = function (object) {
     return object && typeof object === 'object' && !Array.isArray(object);
 };
 
-module.exports.isStringOrArray = function (value) {
+exports.isStringOrArray = function (value) {
     return !(typeof value === 'string' || Array.isArray(value));
 };
 
-module.exports.ensureArray = function (value) {
+exports.ensureArray = function (value) {
     return Array.isArray(value) ? value : [value];
 };
 
