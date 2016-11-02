@@ -3,7 +3,7 @@ exports.isObject = function (object) {
 };
 
 exports.isStringOrArray = function (value) {
-    return !(typeof value === 'string' || Array.isArray(value));
+    return typeof value === 'string' || Array.isArray(value);
 };
 
 exports.ensureArray = function (value) {
