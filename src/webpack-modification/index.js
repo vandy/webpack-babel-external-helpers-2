@@ -8,7 +8,7 @@ exports.modifyConfiguration = function (compiler) {
     if (!modified && pluginOptionsController.get('strict')) {
         throw new Error('Webpack configuration wasn\'t modified. No babel loaders found.');
     }
-    injectModules(compiler);
+    injectHelpersModule(compiler);
 };
 
 function modifyConfiguration(configuration) {
@@ -18,8 +18,4 @@ function modifyConfiguration(configuration) {
     }
 
     return loadersModified;
-}
-
-function injectModules(compiler) {
-    injectHelpersModule(compiler, pluginOptionsController);
 }
