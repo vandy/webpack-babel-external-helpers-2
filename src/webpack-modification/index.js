@@ -5,10 +5,15 @@ const pluginOptionsController = require('../plugin/options');
 
 exports.modifyConfiguration = function (compiler) {
     let modified = modifyConfiguration(compiler.options);
-    if (!modified && pluginOptionsController.get('strict')) {
+    if (modified) {
+        injectHelpersModule(compiler);
+
+        return;
+    }
+
+    if (pluginOptionsController.get('strict')) {
         throw new Error('Webpack configuration wasn\'t modified. No babel loaders found.');
     }
-    injectHelpersModule(compiler);
 };
 
 function modifyConfiguration(configuration) {
