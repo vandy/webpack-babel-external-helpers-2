@@ -25,7 +25,7 @@ function getLoaders(configuration) {
 
 function matchLoaders(loaderParams, aliases) {
     let loaders = [];
-    if (loaderParams.loader && typeof loaderParams.loader === 'string') {
+    if (typeof loaderParams.loader === 'string') {
         loaders = loaderParams.loader.split('!');
     } else if (Array.isArray(loaderParams.loaders)) {
         loaders = loaderParams.loaders;
