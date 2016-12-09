@@ -3,10 +3,14 @@ const {isObject, isStringOrArray, ensureArray} = require('./../helpers');
 
 let options = Object.create(null);
 
-exports.init = function (compiler, rawOptions = {}) {
+init({});
+
+function init(compiler, rawOptions = {}) {
     verify(rawOptions);
     update(compiler.options, rawOptions);
-};
+}
+
+exports.init = init;
 
 exports.get = function (name, defaultValue) {
     if (name in options) {
