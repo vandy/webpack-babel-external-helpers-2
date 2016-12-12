@@ -6,12 +6,12 @@ const pluginOptionsController = require('../../plugin/options');
 module.exports = function (compiler) {
     compiler.plugin('compilation', function (compilation) {
         compilation.plugin('seal', function () {
-            modifyChunks(compiler, compilation);
+            modifyChunks(compilation);
         });
     });
 };
 
-function modifyChunks(compiler, compilation) {
+function modifyChunks(compilation) {
     getChunks(compilation).forEach(chunk => injectHelpers(compilation, chunk.module));
 }
 
