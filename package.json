@@ -1,7 +1,7 @@
 {
   "name": "webpack-babel-external-helpers-2",
   "author": "Roman Sukhorukov",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "Webpack plugin for automatically adding babel-external-helpers to entries when using babel-loader.",
   "keywords": [
     "webpack",
