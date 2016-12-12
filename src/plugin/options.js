@@ -66,7 +66,7 @@ function processOptions(configuration, rawOptions, handlers = {}) {
 function alignEntries(optionsEntries, configuration) {
     let resultEntries = [];
     let configurationEntry = configuration.entry;
-    if (configurationEntry && isObject(configurationEntry)) {
+    if (isObject(configurationEntry)) {
         resultEntries = optionsEntries;
     }
 
