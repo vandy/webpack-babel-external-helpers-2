@@ -2,8 +2,10 @@
 A Webpack plugin which automatically configures `babel-loader` to use [external-helpers](https://babeljs.io/docs/plugins/external-helpers/). And injects `babelHelpers` object to each bundle specified in the configuration.
 
 ## Installation
+`npm install webpack-babel-external-helpers-2`
 
 ## Motivation
+A shortcut to configure babel-loader to use babel-external-helpers plugin. There is no need to install babel plugin manually, use complicated query-string syntax on babel-loader to specify its parameters and create external-helpers module (javascript code) to be added to webpack entries. Just install the package, and make webpack use it as a plugin.
 
 ## Usage examples
 ```javascript
