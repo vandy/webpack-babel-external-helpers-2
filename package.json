@@ -12,6 +12,9 @@
   "license": "MIT",
   "repository": "vandy/webpack-babel-external-helpers-2",
   "main": "src/index.js",
+  "files": [
+    "src/"
+  ],
   "dependencies": {
     "babel-plugin-external-helpers": "^6.8.0",
     "qs": "^6.2.1"
