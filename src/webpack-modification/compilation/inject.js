@@ -1,6 +1,6 @@
 const babelCore = require('babel-core');
 const RawModule = require('webpack/lib/RawModule');
-const SingleEntryDependency = require('webpack/lib/dependencies/SingleEntryDependency');
+const SingleEntryDependencyWrapper = require('../SingleEntryDependencyWrapper');
 const Symbol = require('symbol');
 const NullFactory = require('webpack/lib/NullFactory');
 const pluginOptionsController = require('../../plugin/options');
@@ -12,7 +12,7 @@ module.exports = function (compiler) {
 };
 
 function handleCompilation(compilation) {
-    compilation.dependencyFactories.set(SingleEntryDependency, new NullFactory());
+    compilation.dependencyFactories.set(SingleEntryDependencyWrapper, new NullFactory());
     compilation.plugin('seal', modifyChunks);
 }
 
@@ -34,13 +34,11 @@ function injectHelpers(compilation, topLevelModule) {
     let dependency = getDependency(topLevelModule);
     let module = createModule(dependency);
     let cachedModule = compilation.addModule(module);
-    let cached = false;
-    if (cachedModule && typeof cachedModule !== 'boolean') {
-        cached = true;
+    if (cachedModule instanceof RawModule) {
         module = cachedModule;
     }
     linkModules(topLevelModule, module, dependency);
-    if (!cached) {
+    if (cachedModule === true) {
         topLevelModule.dependencies.unshift(dependency);
         compilation.buildModule(module, (error) => {
             if (error) {
@@ -55,11 +53,11 @@ function getDependency(topLevelModule) {
 }
 
 function findInjectedDependency(topLevelModule) {
-    return topLevelModule.dependencies.filter(dependency => dependency instanceof SingleEntryDependency)[0];
+    return topLevelModule.dependencies.filter(dependency => dependency instanceof SingleEntryDependencyWrapper)[0];
 }
 
 function createDependency(topLevelModule) {
-    let dependency = new SingleEntryDependency('babel-loader-external-helpers');
+    let dependency = new SingleEntryDependencyWrapper('babel-loader-external-helpers');
     dependency.loc = topLevelModule.name + ":" + (100000 - 1);
     dependency[moduleIdentifierSymbol] = topLevelModule.identifier();
 
