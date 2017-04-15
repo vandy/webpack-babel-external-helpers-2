@@ -48,3 +48,9 @@ Array of aliases for babel-loader specified in configuration. In case of an alia
 
 #### `strict` `{Boolean=false} : optional`
 The plugin throws if `strict === true` and no babel-loader was found in webpack configuration.
+
+## Special notes
+
+Node v4 is supported. Use `lib/es5` as the entry point.
+
+`require('webpack-babel-external-helpers-2/lib/es5')`
