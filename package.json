@@ -11,9 +11,9 @@
   ],
   "license": "MIT",
   "repository": "vandy/webpack-babel-external-helpers-2",
-  "main": "src/index.js",
+  "main": "lib/index.js",
   "files": [
-    "src/"
+    "lib/"
   ],
   "dependencies": {
     "babel-plugin-external-helpers": "^6.8.0",
@@ -21,7 +21,9 @@
     "symbol": "^0.3.0"
   },
   "devDependencies": {
+    "babel-cli": "^6.24.1",
     "babel-core": "^6.18.0",
+    "babel-preset-env": "^1.4.0",
     "chai": "^3.5.0",
     "mocha": "^3.1.2",
     "webpack": "^1.13.3"
@@ -31,6 +33,11 @@
     "webpack": "1.x"
   },
   "scripts": {
-    "test": "mocha"
+    "test": "mocha",
+    "prebuild": "npm test",
+    "build": "npm run build-lib && npm run build-es5",
+    "build-es5": "babel src -d \"lib/es5\" --presets=env",
+    "build-lib": "babel src -d lib",
+    "prepublishOnly": "npm run build"
   }
 }
