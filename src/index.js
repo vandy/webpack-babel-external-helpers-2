@@ -1,13 +1,13 @@
-const pluginOptionsController = require('./plugin/options');
+const pluginOptionsController = require('./plugin/options-controller');
 const webpackModification = require('./webpack-modification');
 
-module.exports = WebpackBabelExternalHelpers;
-
-function WebpackBabelExternalHelpers(options = {}) {
-    this._options = options;
+function WebpackBabelExternalHelpers(userOptions) {
+    this._userOptions = userOptions;
 }
 
 WebpackBabelExternalHelpers.prototype.apply = function (compiler) {
-    pluginOptionsController.init(compiler, this._options);
-    webpackModification.modifyConfiguration(compiler);
+    pluginOptionsController.run(compiler, this._userOptions);
+    webpackModification.run(compiler);
 };
+
+module.exports = WebpackBabelExternalHelpers;

@@ -3,44 +3,39 @@ const RawModule = require('webpack/lib/RawModule');
 const SingleEntryDependencyWrapper = require('../SingleEntryDependencyWrapper');
 const Symbol = require('symbol');
 const NullFactory = require('webpack/lib/NullFactory');
-const pluginOptionsController = require('../../plugin/options');
 
 const moduleIdentifierSymbol = Symbol('topLevelModuleIdentifier');
 
-module.exports = function (compiler) {
-    compiler.plugin('compilation', handleCompilation);
+module.exports = function (compiler, pluginOptions) {
+    compiler.plugin('compilation', function (compilation) {
+        inject(compilation, pluginOptions);
+    });
 };
 
-function handleCompilation(compilation) {
+function inject(compilation, pluginOptions) {
     compilation.dependencyFactories.set(SingleEntryDependencyWrapper, new NullFactory());
-    compilation.plugin('seal', modifyChunks);
+    compilation.plugin('seal', function () {
+        getChunks(this, pluginOptions.entries)
+            .forEach(chunk => injectHelpers(this, chunk.module, pluginOptions.whitelist));
+    });
 }
 
-function modifyChunks() {
-    getChunks(this).forEach(chunk => injectHelpers(this, chunk.module));
-}
-
-function getChunks(compilation) {
-    let addToSpecificEntries = pluginOptionsController.get('entries');
-    let chunks = compilation.preparedChunks;
-    if (addToSpecificEntries.length) {
-        return chunks.filter(chunk => addToSpecificEntries.indexOf(chunk.name) > -1);
+function getChunks(compilation, onlyEntries) {
+    const chunks = compilation.preparedChunks;
+    if (onlyEntries.length < 1) {
+        return chunks;
     }
 
-    return chunks;
+    return chunks.filter(chunk => onlyEntries.indexOf(chunk.name) > -1);
 }
 
-function injectHelpers(compilation, topLevelModule) {
-    let dependency = getDependency(topLevelModule);
-    let module = createModule(dependency);
-    let cachedModule = compilation.addModule(module);
-    if (cachedModule instanceof RawModule) {
-        module = cachedModule;
-    }
-    linkModules(topLevelModule, module, dependency);
-    if (cachedModule === true) {
+function injectHelpers(compilation, topLevelModule, babelHelpersWhitelist) {
+    const dependency = getDependency(topLevelModule);
+    const [module, fromCache] = addModule(compilation, createHelpersModule(dependency, babelHelpersWhitelist));
+    link(topLevelModule, module, dependency);
+    if (!fromCache) {
         topLevelModule.dependencies.unshift(dependency);
-        compilation.buildModule(module, (error) => {
+        compilation.buildModule(module, false, topLevelModule, [dependency], error => {
             if (error) {
                 throw new Error('Helpers module is not build.');
             }
@@ -48,41 +43,51 @@ function injectHelpers(compilation, topLevelModule) {
     }
 }
 
-function getDependency(topLevelModule) {
-    return findInjectedDependency(topLevelModule) || createDependency(topLevelModule);
+function addModule(compilation, module) {
+    const added = compilation.addModule(module);
+    const cached = added !== true;
+    if (added === false) {
+        module = compilation.getModule(module);
+    } else if (added instanceof RawModule) {
+        module = added;
+    }
+
+    return [module, cached];
 }
 
-function findInjectedDependency(topLevelModule) {
-    return topLevelModule.dependencies.filter(dependency => dependency instanceof SingleEntryDependencyWrapper)[0];
+function getDependency(module) {
+    return findInjectedDependency(module) || createDependency(module);
 }
 
-function createDependency(topLevelModule) {
-    let dependency = new SingleEntryDependencyWrapper('babel-loader-external-helpers');
-    dependency.loc = topLevelModule.name + ":" + (100000 - 1);
-    dependency[moduleIdentifierSymbol] = topLevelModule.identifier();
+function findInjectedDependency(module) {
+    return module.dependencies.filter(dependency => dependency instanceof SingleEntryDependencyWrapper)[0];
+}
+
+function createDependency(module) {
+    const dependency = new SingleEntryDependencyWrapper('babel-loader-external-helpers');
+    dependency.loc = module.name + ":" + (100000 - 1);
+    dependency[moduleIdentifierSymbol] = module.identifier();
 
     return dependency;
 }
 
-function createModule(dependency) {
-    return new RawModule(buildBabelHelpers(), getModuleIdentifier(dependency));
+function createHelpersModule(dependency, whitelist) {
+    return new RawModule(buildBabelHelpers(whitelist), getModuleIdentifier(dependency));
 }
 
-function buildBabelHelpers() {
-    let whitelistArgument;
-    let whitelist = pluginOptionsController.get('whitelist');
+function buildBabelHelpers(whitelist) {
     if (whitelist.length) {
-        whitelistArgument = whitelist;
+        return babelCore.buildExternalHelpers(whitelist);
     }
 
-    return babelCore.buildExternalHelpers(whitelistArgument);
+    return babelCore.buildExternalHelpers();
 }
 
 function getModuleIdentifier(dependency) {
     return 'generated babel-helpers ' + dependency[moduleIdentifierSymbol];
 }
 
-function linkModules(topLevelModule, module, dependecy) {
+function link(topLevelModule, module, dependecy) {
     module.issuer = topLevelModule.identifier();
     dependecy.module = module;
     module.addReason(topLevelModule, dependecy);

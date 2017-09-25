@@ -26,11 +26,11 @@
     "babel-preset-env": "^1.4.0",
     "chai": "^3.5.0",
     "mocha": "^3.1.2",
-    "webpack": "^1.13.3"
+    "webpack": "^2.4.0"
   },
   "peerDependencies": {
     "babel-core": "6.x",
-    "webpack": "1.x"
+    "webpack": "2.x"
   },
   "scripts": {
     "test": "mocha",

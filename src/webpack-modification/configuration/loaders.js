@@ -1,48 +1,90 @@
 const qs = require('qs');
-const {isObject} = require('../../helpers');
+const {isObject, ensureArray} = require('../../helpers');
+
+const BABEL_PLUGIN_REGEXP = /(?:^|babel-plugin-)external-helpers$/i;
 
 module.exports = function modifyLoaders(configuration, pluginOptions) {
-    let aliases = getBabelLoaderAliases(pluginOptions);
-    let loadersParams = getBabelLoaders(configuration, aliases);
-    loadersParams.forEach(loaderParams => addQueryParams(loaderParams, aliases));
-
-    return loadersParams.length > 0;
+    return modifyRules(configuration.module, 'rules', getBabelLoaderAliases(pluginOptions.aliases));
 };
 
-function getBabelLoaderAliases(pluginOptions) {
-    return [/(?:^|!)babel(?:(?:-\w+)?-loader)?$/i].concat(pluginOptions.get('aliases'));
+function getBabelLoaderAliases(userAliases) {
+    return [/(?:^|!)babel(?:(?:-\w+)?-loader)?$/i].concat(userAliases);
 }
 
-function getBabelLoaders(configuration, aliases) {
-    return getLoaders(configuration).filter(loaderParams => matchLoaders(loaderParams, aliases));
-}
-
-function getLoaders(configuration) {
-    let loaders = isObject(configuration.module) && configuration.module.loaders;
-
-    return Array.isArray(loaders) ? loaders : [];
-}
-
-function matchLoaders(loaderParams, aliases) {
-    let loaders = [];
-    if (typeof loaderParams.loader === 'string') {
-        loaders = loaderParams.loader.split('!');
-    } else if (Array.isArray(loaderParams.loaders)) {
-        loaders = loaderParams.loaders;
+function modifyRules(container, target, aliases) {
+    const rulesItem = container[target];
+    if (Array.isArray(rulesItem)) {
+        return rulesItem
+            .map((item, index) => modifyRules(rulesItem, index, aliases))
+            .filter(Boolean)
+            .length > 0;
     }
 
-    return extractLoaderNames(loaders).some(loaderName => matchLoaderNameByAliases(loaderName, aliases));
+    const rule = modifyRulesItem(rulesItem, aliases);
+    if (rule) {
+        container[target] = rule;
+    }
+
+    return Boolean(rule);
 }
 
-function extractLoaderNames(loaderStrings) {
-    return loaderStrings.reduce((result, loaderString) => {
-        let loaderName = extractLoaderName(loaderString);
-        if (loaderName) {
-            result.push(loaderName);
+function modifyRulesItem(rule, aliases) {
+    if (typeof rule === 'string') {
+        return modifyLoaderString(rule, aliases);
+    } else if (isObject(rule)) {
+        return modifyRuleObject(rule, aliases);
+    }
+
+    return null;
+}
+
+function modifyLoaderString(loadersString, aliases) {
+    let babelLoaderFound = false;
+    const modifiedLoaders = loadersString.split('!').map(loaderString => {
+        const loaderName = extractLoaderName(loaderString);
+        if (matchLoader(loaderName, aliases)) {
+            babelLoaderFound = true;
+            const queryString = inject(extractLoaderQuery(loaderString));
+
+            return `${loaderName}?${queryString}`;
         }
 
-        return result;
-    }, []);
+        return loaderString;
+    }).join('!');
+
+    return babelLoaderFound ? modifiedLoaders : null;
+}
+
+function modifyRuleObject(rule, aliases) {
+    const useModified = rule.use ? modifyRules(rule, 'use', aliases) : false;
+    const oneOfModified = rule.oneOf ? modifyRules(rule, 'oneOf', aliases) : false;
+    const loaderModified = typeof rule.loader === 'string' ? modifyRuleLoader(rule, aliases) : false;
+    const loadersModified = rule.loaders ? modifyRules(rule, 'loaders', aliases) : false;
+
+    return (loaderModified || loadersModified || useModified || oneOfModified) ? rule : null;
+}
+
+function modifyRuleLoader(rule, aliases) {
+    const loaderString = rule.loader;
+    if (!rule.options && !rule.query) {
+        const modifiedValue = modifyLoaderString(loaderString, aliases);
+        if (modifiedValue) {
+            rule.loader = modifiedValue;
+        }
+
+        return Boolean(modifiedValue);
+    } else if (matchLoader(loaderString, aliases)) {
+        if (rule.options) {
+            rule.options = inject(rule.options);
+        }
+        if (rule.query) {
+            rule.query = inject(rule.query);
+        }
+
+        return true;
+    }
+
+    return false;
 }
 
 function extractLoaderName(loaderString = '') {
@@ -50,16 +92,15 @@ function extractLoaderName(loaderString = '') {
 }
 
 function extractLoaderQuery(loaderString = '') {
-    const querySignIndex = loaderString.indexOf('?');
-    let result = '';
-    if (querySignIndex > -1) {
-        result = loaderString.substring(querySignIndex + 1);
+    const queryIndex = loaderString.indexOf('?');
+    if (queryIndex < 0) {
+        return '';
     }
 
-    return result;
+    return loaderString.substring(queryIndex + 1);
 }
 
-function matchLoaderNameByAliases(loaderName, aliases) {
+function matchLoader(loaderName, aliases) {
     loaderName = loaderName.toLowerCase();
 
     return aliases.some(alias => {
@@ -71,31 +112,23 @@ function matchLoaderNameByAliases(loaderName, aliases) {
     });
 }
 
-function addQueryParams(loaderParams, aliases) {
-    if (loaderParams.query) {
-        loaderParams.query = injectQueryParamsToLoaderQuery(loaderParams.query);
-
-        return;
-    }
-
-    let loaderString = (typeof loaderParams.loader === 'string') ? loaderParams.loader : null;
-    if (loaderString) {
-        loaderParams.loader = injectQueryParamsToLoaderString(loaderString, aliases);
-    } else if (Array.isArray(loaderParams.loaders)) {
-        loaderParams.loaders = injectQueryParamsToLoadersArray(loaderParams.loaders, aliases);
-    }
+function inject(query) {
+    return qs.stringify(injectPluginParams(getQueryObject(query)), {arrayFormat: 'brackets', encode: false});
 }
 
-function injectQueryParamsToLoaderQuery(query) {
-    const queryObject = getQueryObject(query);
-    injectPluginsParams(queryObject);
+function injectPluginParams(query) {
+    const plugins = Array.isArray(query.plugins) ? query.plugins : [];
+    if (!plugins.some(pluginName => BABEL_PLUGIN_REGEXP.test(pluginName))) {
+        plugins.push('external-helpers');
+    }
+    query.plugins = plugins.filter(Boolean);
 
-    return qs.stringify(queryObject, {arrayFormat: 'brackets', encode: false});
+    return query;
 }
 
 function getQueryObject(query) {
     if (typeof query === 'string') {
-        query = parseQueryString(query);
+        return parseQueryString(query);
     }
 
     return query;
@@ -107,30 +140,4 @@ function parseQueryString(queryString) {
     }
 
     return qs.parse(queryString, {allowDots: true});
-}
-
-function injectPluginsParams(query) {
-    const helpersPluginRegexp = /(?:^|babel-plugin-)external-helpers$/i;
-    const plugins = Array.isArray(query.plugins) ? query.plugins : [];
-    if (!plugins.some(pluginName => helpersPluginRegexp.test(pluginName))) {
-        plugins.push('external-helpers');
-    }
-    query.plugins = plugins.filter(Boolean);
-}
-
-function injectQueryParamsToLoaderString(loaders, aliases) {
-    return injectQueryParamsToLoadersArray(loaders.split('!'), aliases).join('!');
-}
-
-function injectQueryParamsToLoadersArray(loaderStrings, aliases) {
-    return loaderStrings.map(loaderString => {
-        let loaderName = extractLoaderName(loaderString);
-        if (!matchLoaderNameByAliases(loaderName, aliases)) {
-            return loaderString;
-        }
-
-        let queryString = injectQueryParamsToLoaderQuery(extractLoaderQuery(loaderString));
-
-        return `${loaderName}?${queryString}`;
-    });
 }

@@ -1,10 +1,13 @@
-let SingleEntryDependency = require('webpack/lib/dependencies/SingleEntryDependency');
+const SingleEntryDependency = require('webpack/lib/dependencies/SingleEntryDependency');
 
-function SingleEntryDependencyWrapper(request) {
-    SingleEntryDependency.call(this, request);
+class SingleEntryDependencyWrapper extends SingleEntryDependency {
+    constructor(request) {
+        super(request);
+    }
+
+    get type() {
+        return 'single entry wrapper';
+    }
 }
-module.exports = SingleEntryDependencyWrapper;
 
-SingleEntryDependencyWrapper.prototype = Object.create(SingleEntryDependency.prototype);
-SingleEntryDependencyWrapper.prototype.constructor = SingleEntryDependencyWrapper;
-SingleEntryDependencyWrapper.prototype.type = 'single entry wrapper';
+module.exports = SingleEntryDependencyWrapper;
