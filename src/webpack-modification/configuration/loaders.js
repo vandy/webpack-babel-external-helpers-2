@@ -58,10 +58,11 @@ function modifyLoaderString(loadersString, aliases) {
 function modifyRuleObject(rule, aliases) {
     const useModified = rule.use ? modifyRules(rule, 'use', aliases) : false;
     const oneOfModified = rule.oneOf ? modifyRules(rule, 'oneOf', aliases) : false;
+    const rulesModified = rule.rules ? modifyRules(rule, 'rules', aliases) : false;
     const loaderModified = typeof rule.loader === 'string' ? modifyRuleLoader(rule, aliases) : false;
     const loadersModified = rule.loaders ? modifyRules(rule, 'loaders', aliases) : false;
 
-    return (loaderModified || loadersModified || useModified || oneOfModified) ? rule : null;
+    return (loaderModified || loadersModified || useModified || oneOfModified || rulesModified) ? rule : null;
 }
 
 function modifyRuleLoader(rule, aliases) {
