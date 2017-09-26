@@ -1,5 +1,5 @@
 const qs = require('qs');
-const {isObject, ensureArray} = require('../../helpers');
+const {isObject} = require('../../helpers');
 
 const BABEL_PLUGIN_REGEXP = /(?:^|babel-plugin-)external-helpers$/i;
 
