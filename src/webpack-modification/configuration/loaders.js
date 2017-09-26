@@ -56,13 +56,14 @@ function modifyLoaderString(loadersString, aliases) {
 }
 
 function modifyRuleObject(rule, aliases) {
-    const useModified = rule.use ? modifyRules(rule, 'use', aliases) : false;
-    const oneOfModified = rule.oneOf ? modifyRules(rule, 'oneOf', aliases) : false;
-    const rulesModified = rule.rules ? modifyRules(rule, 'rules', aliases) : false;
-    const loaderModified = typeof rule.loader === 'string' ? modifyRuleLoader(rule, aliases) : false;
-    const loadersModified = rule.loaders ? modifyRules(rule, 'loaders', aliases) : false;
+    function modify(field) {
+        return rule[field] ? modifyRules(rule, field, aliases) : false;
+    }
 
-    return (loaderModified || loadersModified || useModified || oneOfModified || rulesModified) ? rule : null;
+    const loaderModified = typeof rule.loader === 'string' ? modifyRuleLoader(rule, aliases) : false;
+    const propertiesModified = ['use', 'oneOf', 'rules', 'loaders'].filter(modify);
+
+    return (loaderModified || propertiesModified.length > 0) ? rule : null;
 }
 
 function modifyRuleLoader(rule, aliases) {
