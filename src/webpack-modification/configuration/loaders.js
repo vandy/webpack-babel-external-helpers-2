@@ -3,7 +3,7 @@ const {isObject} = require('../../helpers');
 
 const BABEL_PLUGIN_REGEXP = /(?:^|babel-plugin-)external-helpers$/i;
 
-module.exports = function modifyLoaders(configuration, pluginOptions) {
+module.exports = function setupLoaders(configuration, pluginOptions) {
     return modifyRules(configuration.module, 'rules', getBabelLoaderAliases(pluginOptions.aliases));
 };
 

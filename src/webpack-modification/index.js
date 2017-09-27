@@ -1,6 +1,5 @@
-const modifyLoaders = require('./configuration/loaders');
-const modifyEntry = require('./configuration/entry');
-const inject = require('./compilation/inject');
+const modifyCompilation = require('./compilation');
+const modifyConfiguration = require('./configuration');
 const pluginOptionsController = require('../plugin/options-controller');
 
 exports.run = function (compiler) {
@@ -17,8 +16,8 @@ function ensurePluginSupports(configuration) {
 }
 
 function modify(compiler) {
-    if (modifyConfiguration(compiler.options)) {
-        injectIntoCompilation(compiler);
+    if (modifyConfiguration(compiler.options, pluginOptionsController)) {
+        modifyCompilation(compiler, pluginOptionsController);
 
         return;
     }
@@ -26,20 +25,4 @@ function modify(compiler) {
     if (pluginOptionsController.get('strict')) {
         throw new Error('Webpack configuration wasn\'t modified. No babel loaders found.');
     }
-}
-
-function modifyConfiguration(configuration) {
-    const modified = modifyLoaders(configuration, {aliases: pluginOptionsController.get('aliases')});
-    if (modified) {
-        modifyEntry(configuration, {entries: pluginOptionsController.get('entries')});
-    }
-
-    return modified;
-}
-
-function injectIntoCompilation(compiler) {
-    inject(compiler, {
-        entries: pluginOptionsController.get('entries'),
-        whitelist: pluginOptionsController.get('whitelist'),
-    });
 }
