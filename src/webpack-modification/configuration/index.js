@@ -9,8 +9,7 @@ module.exports = function modifyConfiguration(configuration, pluginOptions) {
 function modifyConfigurationEntry(configuration, pluginOptions) {
     const modified = modifyEntry(configuration, {entries: pluginOptions.get('entries')});
     if (!modified && pluginOptions.get('strict')) {
-        throw new Error('Webpack configuration wasn\'t modified. ' +
-            'Specified entries were not found in the configuration.');
+        throwError('Specified entries were not found in the configuration.');
     }
 
     return modified;
@@ -19,9 +18,12 @@ function modifyConfigurationEntry(configuration, pluginOptions) {
 function setupConfigurationLoaders(configuration, pluginOptions) {
     const setup = setupLoaders(configuration, {aliases: pluginOptions.get('aliases')});
     if (!setup && pluginOptions.get('strict')) {
-        throw new Error('Webpack configuration wasn\'t modified. ' +
-            'No babel-loader found.');
+        throwError('No babel-loader found.');
     }
 
     return setup;
+}
+
+function throwError(msg) {
+    throw new Error(`Webpack configuration wasn\'t modified. ${msg}`);
 }
