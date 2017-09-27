@@ -18,11 +18,5 @@ function ensurePluginSupports(configuration) {
 function modify(compiler) {
     if (modifyConfiguration(compiler.options, pluginOptionsController)) {
         modifyCompilation(compiler, pluginOptionsController);
-
-        return;
-    }
-
-    if (pluginOptionsController.get('strict')) {
-        throw new Error('Webpack configuration wasn\'t modified. No babel loaders found.');
     }
 }
