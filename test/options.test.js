@@ -2,139 +2,149 @@
 
 const chai = require('chai');
 const assert = chai.assert;
-const defaultOptions = require('../src/plugin/defaults');
-const PluginController = require('../src/plugin/options');
+const optionsController = require('../src/plugin/options-controller');
 
-describe('OptionsController.', function () {
-    describe('Default options.', function () {
-        const compiler = {options: {}};
-
-        beforeEach(function () {
-            PluginController.init(compiler);
+describe('Plugin Options Controller', function () {
+    describe('Default options', function () {
+        it('should be defined', function () {
+            ['entries', 'whitelist', 'aliases', 'strict'].every(name => assert.isDefined(optionsController.get(name)));
         });
 
-        it('Should be defined', function () {
-            Object.keys(defaultOptions.get()).every(key => assert.isDefined(PluginController.get(key)));
-        });
-
-        it('Should have the correct value types', function () {
-            ['entries', 'aliases', 'whitelist'].forEach(key => {
-                let value = PluginController.get(key);
+        it('should have the correct value types', function () {
+            ['entries', 'whitelist', 'aliases'].forEach(key => {
+                const value = optionsController.get(key);
                 assert(Array.isArray(value) && value.length === 0, `Default "${key}" should be an empty array`);
             });
-            assert.isFalse(PluginController.get('strict'), 'Default "strict" should be false');
-        });
-
-        it ('Non-default options should be undefined', function () {
-            assert.isUndefined(PluginController.get('not-in-default'));
+            assert.isFalse(optionsController.get('strict'), 'Default "strict" should be false');
         });
     });
 
-    describe('User options passed.', function () {
-        it('Verified to be of the correct type before using', function () {
-            const compiler = {options: {}};
+    it ('should be undefined non-default options', function () {
+        assert.isUndefined(optionsController.get('not-in-default'));
+    });
+
+    describe('User options', function () {
+        it('should be verified to have the correct type', function () {
+            const compiler = {
+                options: {},
+                plugin() {},
+            };
 
             assert.throws(function () {
-                PluginController.init(compiler, {entries: true});
+                optionsController.run(compiler, {entries: true});
             }, Error);
 
             assert.throws(function () {
-                PluginController.init(compiler, {whitelist: 5});
+                optionsController.run(compiler, {whitelist: 5});
             }, Error);
 
             assert.throws(function () {
-                PluginController.init(compiler, {aliases: 'aliases'});
+                optionsController.run(compiler, {aliases: 'aliases'});
             }, Error);
 
             assert.doesNotThrow(function () {
-                PluginController.init(compiler, {entries: 'main'});
+                optionsController.run(compiler, {entries: 'main'});
             }, Error);
 
             assert.doesNotThrow(function () {
-                PluginController.init(compiler, {entries: ['main', 'not-main']});
+                optionsController.run(compiler, {entries: ['main', 'not-main']});
             }, Error);
 
             assert.doesNotThrow(function () {
-                PluginController.init(compiler, {whitelist: 'one,two'});
+                optionsController.run(compiler, {whitelist: 'one,two'});
             }, Error);
 
             assert.doesNotThrow(function () {
-                PluginController.init(compiler, {whitelist: ['one', 'two']});
+                optionsController.run(compiler, {whitelist: ['one', 'two']});
             }, Error);
 
             assert.doesNotThrow(function () {
-                PluginController.init(compiler, {aliases: ['babel', 'babel-my-loader']});
+                optionsController.run(compiler, {aliases: ['babel', 'babel-my-loader']});
             }, Error);
         });
 
         describe('Whitelist', function () {
-            const compiler = {options: {}};
+            const compiler = {
+                options: {},
+                plugin(name, callback) {
+                    callback.call(this);
+                },
+            };
 
-            it('Empty string results in an empty array', function () {
-                PluginController.init(compiler, {whitelist: ''});
-                let result = PluginController.get('whitelist');
+            it('empty string: should be an empty array', function () {
+                optionsController.run(compiler, {whitelist: ''});
+                const result = optionsController.get('whitelist');
 
                 assert.isArray(result, 'empty string should result in whitelist array');
                 assert.lengthOf(result, 0, 'empty string should result in empty whitelist array');
             });
 
-            it('Space delimited string results in an array of trimmed items split by space', function () {
-                PluginController.init(compiler, {whitelist: 'one  two three'});
-                let result = PluginController.get('whitelist');
-
-                assert.deepEqual(result, ['one', 'two', 'three'], 'all items should be trimmed without spaces inside');
+            it('space delimited string: should be an array of trimmed items split by space', function () {
+                optionsController.run(compiler, {whitelist: 'one  two three'});
+                assert.deepEqual(
+                    optionsController.get('whitelist'),
+                    ['one', 'two', 'three'],
+                    'all items should be trimmed without spaces inside'
+                );
             });
 
-            it('Comma delimited string results in an array of items ' +
-                'split by comma and without spaces outside and inside of the string', function () {
-                PluginController.init(compiler, {whitelist: '  one, two,three without space,  four'});
-                let result = PluginController.get('whitelist');
-
+            it('comma delimited string: should be an array of items split by comma with no spaces', function () {
+                optionsController.run(compiler, {whitelist: '  one, two,three without space,  four'});
                 assert.deepEqual(
-                    result,
+                    optionsController.get('whitelist'),
                     ['one', 'two', 'threewithoutspace', 'four'],
                     'all items should be split by comma, all spaces removed.');
             });
 
-            it('Array results in an array with filtered out falsy values, other values are as is', function () {
-                PluginController.init(compiler, {whitelist: ['one', '', 'two ', null, 'three with space']});
-                let result = PluginController.get('whitelist');
-
+            it('array: should be an array with filtered out falsy values, other values are as is', function () {
+                optionsController.run(compiler, {whitelist: ['one', '', 'two ', null, 'three with space']});
                 assert.deepEqual(
-                    result,
+                    optionsController.get('whitelist'),
                     ['one', 'two ', 'three with space'],
                     'falsy values should be filtered, non-falsy items left intact');
             });
         });
 
         describe('Entries', function () {
-           it('Non-object "entry" property value of the configuration ' +
-               'results in an empty array regardless of value "entries"', function () {
-               const compiler = {options: {entry: './main.js'}};
-               PluginController.init(compiler, {entries: 'main'});
-               let result = PluginController.get('entries');
+            const compiler = {
+                options: {},
+                plugin(name, callback) {
+                    callback.call(this);
+                },
+            };
+
+           afterEach(function () {
+               compiler.options = {};
+           });
+
+           it('should be an empty array if Webpack configuration "entry" property is not an object', function () {
+               compiler.options.entry = './main.js';
+
+               optionsController.run(compiler, {entries: 'main'});
+               let result = optionsController.get('entries');
 
                assert.isArray(result);
                assert.lengthOf(result, 0);
 
                compiler.options.entry = ['./main.js', './content.js'];
-               PluginController.init(compiler, {entries: ['background']});
-               result = PluginController.get('entries');
+               optionsController.run(compiler, {entries: ['background']});
+               result = optionsController.get('entries');
 
                assert.isArray(result);
                assert.lengthOf(result, 0);
            });
 
-           it('Object "entry" property value of the configuration ' +
-               'results in an array containing passed value whether string or array with items intact', function () {
-               const compiler = {options: {entry: {stable: './main.js'}}};
-               PluginController.init(compiler, {entries: 'main'});
-               let result = PluginController.get('entries');
+           it('should be an array containing passed value (whether string or array) ' +
+               'if Webpack configuration "entry" property is an object', function () {
+               compiler.options.entry = {stable: './main.js'};
+
+               optionsController.run(compiler, {entries: 'main'});
+               let result = optionsController.get('entries');
 
                assert.deepEqual(result, ['main']);
 
-               PluginController.init(compiler, {entries: ['stable', 'beta']});
-               result = PluginController.get('entries');
+               optionsController.run(compiler, {entries: ['stable', 'beta']});
+               result = optionsController.get('entries');
 
                assert.deepEqual(result, ['stable', 'beta']);
            });

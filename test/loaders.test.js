@@ -3,299 +3,471 @@
 const chai = require('chai');
 const qs = require('qs');
 const assert = chai.assert;
-const PluginController = require('../src/plugin/options');
-const modifyLoaders = require('../src/webpack-modification/configuration/loaders');
+const setupLoaders = require('../src/webpack-modification/configuration/loaders');
 
-describe('Babel-loader is not specified in configuration.', function () {
-    it('Configuration is not changed, false value is returned', function () {
-        const compiler = {options: {
-            entry: './main.js',
-            module: {
-                loaders: [{
-                    test: /\.js$/,
-                    loader: 'not-babel-loader',
-                }],
-            },
-        }};
-        PluginController.init(compiler);
-
-        let result = true;
-        let functionModifies = function () {
-            result = modifyLoaders(compiler.options, PluginController);
+describe('Webpack configuration modification: babel-loader options', function () {
+    describe('babel-loader is not specified in module.rules', function () {
+        const pluginOptions = {
+            aliases: [],
         };
-        let objectToBeModified = compiler.options.module.loaders[0];
 
-        assert.doesNotChange(functionModifies, objectToBeModified, 'loader');
-        assert.isFalse(result);
-    });
-});
+        describe('module.rules is a string', function () {
+            it('should not change the configuration', function () {
+                const configuration = {
+                    module: {
+                        rules: 'not-babel-loader',
+                    },
+                };
 
-describe('Babel-loader is specified, "plugins[]=external-helpers" query parameter injection.', function () {
-    describe('Query parameters property is specified (only "loader" property is allowed).', function () {
-        it('String, doesn\'t contain external-helpers', function () {
-            const compiler = {options: {
-                entry: './main.js',
-                module: {
-                    loaders: [{
-                        test: /\.js$/,
-                        loader: 'babel',
-                        query: 'presets[]=es2015',
-                    }],
-                },
-            }};
-            PluginController.init(compiler);
-
-            let functionModifies = function () {
-                modifyLoaders(compiler.options, PluginController);
-            };
-            let babelLoaderParams = compiler.options.module.loaders[0];
-
-            assert.changes(functionModifies, babelLoaderParams, 'query');
-
-            let parameters = qs.parse(babelLoaderParams.query, {allowDots: true});
-
-            assert.deepEqual(parameters, {plugins: ['external-helpers'], presets: ['es2015']});
-        });
-
-        it('String, contains external-helpers', function () {
-            const compiler = {options: {
-                entry: './main.js',
-                module: {
-                    loaders: [{
-                        test: /\.js$/,
-                        loader: 'babel',
-                        query: 'presets[]=es2015&plugins[]=babel-plugin-external-helpers',
-                    }],
-                },
-            }};
-            PluginController.init(compiler);
-
-            let functionModifies = function () {
-                modifyLoaders(compiler.options, PluginController);
-            };
-            let babelLoaderParams = compiler.options.module.loaders[0];
-
-            assert.doesNotChange(functionModifies, babelLoaderParams, 'query');
-        });
-
-        it('Object, doesn\'t contain external-helpers', function () {
-            const compiler = {options: {
-                entry: './main.js',
-                module: {
-                    loaders: [{
-                        test: /\.js$/,
-                        loader: 'babel',
-                        query: {
-                            presets: ['es2015'],
-                        },
-                    }],
-                },
-            }};
-            PluginController.init(compiler);
-
-            let functionModifies = function () {
-                modifyLoaders(compiler.options, PluginController);
-            };
-            let babelLoaderParams = compiler.options.module.loaders[0];
-
-            assert.changes(functionModifies, babelLoaderParams, 'query');
-            assert.isString(babelLoaderParams.query);
-            assert.match(babelLoaderParams.query, /plugins\[]=external-helpers/);
-        });
-
-        it('Object, contains external-helpers', function () {
-            const compiler = {options: {
-                entry: './main.js',
-                module: {
-                    loaders: [{
-                        test: /\.js$/,
-                        loader: 'babel',
-                        query: {
-                            presets: ['es2015'],
-                            plugins: ['transform-regenerator', 'external-helpers'],
-                        },
-                    }],
-                },
-            }};
-            PluginController.init(compiler);
-
-            let functionModifies = function () {
-                modifyLoaders(compiler.options, PluginController);
-            };
-            let babelLoaderParams = compiler.options.module.loaders[0];
-
-            assert.changes(functionModifies, babelLoaderParams, 'query');
-            assert.isString(babelLoaderParams.query);
-            assert.match(babelLoaderParams.query, /plugins\[]=external-helpers/);
-        });
-    });
-
-    describe('Query parameters property is NOT specified.', function () {
-        it('"loader" property: single loader, no inline query parameters', function () {
-            const compiler = {options: {
-                entry: './main.js',
-                module: {
-                    loaders: [{
-                        test: /\.js$/,
-                        loader: 'babel',
-                    }],
-                },
-            }};
-            PluginController.init(compiler);
-
-            let functionModifies = function () {
-                modifyLoaders(compiler.options, PluginController);
-            };
-            let objectToBeModified = compiler.options.module.loaders[0];
-
-            assert.changes(functionModifies, objectToBeModified, 'loader');
-            assert.strictEqual(objectToBeModified.loader, 'babel?plugins[]=external-helpers');
-        });
-
-        it('"loader" property: single loader with inline query parameters', function () {
-            const compiler = {options: {
-                entry: './main.js',
-                module: {
-                    loaders: [{
-                        test: /\.js$/,
-                        loader: 'babel?plugins[]=transform-runtime',
-                    }],
-                },
-            }};
-            PluginController.init(compiler);
-
-            let functionModifies = function () {
-                modifyLoaders(compiler.options, PluginController);
-            };
-            let babelLoaderParams = compiler.options.module.loaders[0];
-
-            assert.changes(functionModifies, babelLoaderParams, 'loader');
-
-            let parameters = qs.parse(babelLoaderParams.loader.split('?').pop(), {allowDots: true});
-
-            assert.deepEqual(parameters, {plugins: ['transform-runtime', 'external-helpers']});
-        });
-
-        it('"loader" property: multiple loaders, no inline query parameters', function () {
-            const compiler = {options: {
-                entry: './main.js',
-                module: {
-                    loaders: [{
-                        test: /\.js$/,
-                        loader: 'babel!raw-text',
-                    }],
-                },
-            }};
-            PluginController.init(compiler);
-
-            let functionModifies = function () {
-                modifyLoaders(compiler.options, PluginController);
-            };
-            let babelLoaderParams = compiler.options.module.loaders[0];
-            let propertyChanged = 'loader';
-
-            assert.changes(functionModifies, babelLoaderParams, propertyChanged);
-            assert.isString(babelLoaderParams[propertyChanged]);
-            assert.match(babelLoaderParams[propertyChanged], /^babel\?plugins\[]=external-helpers!raw-text/);
-        });
-
-        it('"loader" property: multiple loaders with inline query parameters', function () {
-            const compiler = {options: {
-                entry: './main.js',
-                module: {
-                    loaders: [{
-                        test: /\.js$/,
-                        loader: 'babel?presets[]=es2015!imports-loader',
-                    }],
-                },
-            }};
-            PluginController.init(compiler);
-
-            let functionModifies = function () {
-                modifyLoaders(compiler.options, PluginController);
-            };
-            let babelLoaderParams = compiler.options.module.loaders[0];
-            let propertyChanged = 'loader';
-
-            assert.changes(functionModifies, babelLoaderParams, propertyChanged);
-            assert.isString(babelLoaderParams[propertyChanged]);
-            assert.match(babelLoaderParams[propertyChanged], /plugins\[]=external-helpers/);
-        });
-
-        it('"loaders" property: no inline query parameters', function () {
-            const compiler = {options: {
-                entry: './main.js',
-                module: {
-                    loaders: [{
-                        test: /\.js$/,
-                        loaders: ['imports-loader', 'babel'],
-                    }],
-                },
-            }};
-            PluginController.init(compiler);
-
-            let functionModifies = function () {
-                modifyLoaders(compiler.options, PluginController);
-            };
-            let babelLoaderParams = compiler.options.module.loaders[0];
-            let propertyChanged = 'loaders';
-
-            assert.changes(functionModifies, babelLoaderParams, propertyChanged);
-            assert.isArray(babelLoaderParams[propertyChanged]);
-            assert.oneOf('babel?plugins[]=external-helpers', babelLoaderParams[propertyChanged]);
-        });
-
-        it('"loaders" property: inline query parameters', function () {
-            const compiler = {options: {
-                entry: './main.js',
-                module: {
-                    loaders: [{
-                        test: /\.js$/,
-                        loaders: ['imports-loader', 'babel?presets[]=es2015'],
-                    }],
-                },
-            }};
-            PluginController.init(compiler);
-
-            let functionModifies = function () {
-                modifyLoaders(compiler.options, PluginController);
-            };
-            let babelLoaderParams = compiler.options.module.loaders[0];
-            let propertyChanged = 'loaders';
-
-            assert.changes(functionModifies, babelLoaderParams, propertyChanged);
-            assert.isArray(babelLoaderParams[propertyChanged]);
-            assert.oneOf('babel?presets[]=es2015&plugins[]=external-helpers', babelLoaderParams[propertyChanged]);
-        });
-    });
-});
-
-describe('Babel-loader specified with alias', function () {
-    it('"aliases" option is used, configuration is changed, true is returned', function () {
-        const compiler = {options: {
-            entry: './main.js',
-            module: {
-                loaders: [{
-                    test: /\.js$/,
-                    loader: 'babel-alias',
-                }],
-            },
-            resolveLoader: {
-                alias: {
-                    'babel-alias': 'babel',
+                function modify() {
+                    setupLoaders(configuration, pluginOptions);
                 }
-            },
-        }};
-        PluginController.init(compiler, {aliases: ['babel-alias']});
 
-        let result = false;
-        let functionModifies = function () {
-            result = modifyLoaders(compiler.options, PluginController);
+                assert.doesNotChange(modify, configuration.module, 'rules');
+            });
+
+            it('should return false', function () {
+                const configuration = {
+                    module: {
+                        rules: 'not-babel-loader',
+                    },
+                };
+
+                assert.isFalse(setupLoaders(configuration, pluginOptions));
+            })
+        });
+
+        describe('module.rules is an object', function () {
+            it('should not change the configuration', function () {
+                const configuration = {
+                    module: {
+                        rules: {
+                            test: /\.js$/i,
+                            loader: 'not-babel-loader',
+                        },
+                    },
+                };
+
+                function modify() {
+                    setupLoaders(configuration, pluginOptions);
+                }
+
+                assert.doesNotChange(modify, configuration.module.rules, 'loader');
+            });
+
+            it('should return false', function () {
+                const configuration = {
+                    module: {
+                        rules: {
+                            test: /\.js$/i,
+                            loader: 'not-babel-loader',
+                        },
+                    },
+                };
+
+                assert.isFalse(setupLoaders(configuration, pluginOptions));
+            });
+        });
+
+        describe('module.rules is an array', function () {
+            it('should not change the configuration', function () {
+                const configuration = {
+                    module: {
+                        rules: [{
+                            test: /\.js$/i,
+                            loader: 'not-babel-loader',
+                        }],
+                    },
+                };
+
+                function modify() {
+                    setupLoaders(configuration, pluginOptions);
+                }
+
+                assert.doesNotChange(modify, configuration.module.rules[0], 'loader');
+            });
+
+            it('should return false', function () {
+                const configuration = {
+                    module: {
+                        rules: [{
+                            test: /\.js$/i,
+                            loader: 'not-babel-loader',
+                        }],
+                    },
+                };
+
+                assert.isFalse(setupLoaders(configuration, pluginOptions));
+            });
+        });
+    });
+
+    describe('babel-loader is specified in module.rules', function () {
+        const pluginOptions = {
+            aliases: [],
         };
-        let babelLoaderParams = compiler.options.module.loaders[0];
-        let propertyChanged = 'loader';
 
-        assert.changes(functionModifies, babelLoaderParams, propertyChanged);
-        assert.isTrue(result);
+        describe('module.rules is a string', function () {
+            describe('one loader without query params', function () {
+                it('should add query params to the loader string', function () {
+                    const configuration = {
+                        module: {
+                            rules: 'babel-loader',
+                        },
+                    };
+                    setupLoaders(configuration, pluginOptions);
+
+                    assert.strictEqual(configuration.module.rules, 'babel-loader?plugins[]=external-helpers');
+                });
+            });
+
+            describe('one loader with query params, external-helpers are not specified', function () {
+                it('should inject external-helpers into query params', function () {
+                    const configuration = {
+                        module: {
+                            rules: 'babel-loader?presets[]=es2015',
+                        },
+                    };
+                    setupLoaders(configuration, pluginOptions);
+
+                    assert.deepEqual(
+                        qs.parse(configuration.module.rules.split('?').pop(), {allowDots: true}),
+                        {plugins: ['external-helpers'], presets: ['es2015']}
+                    );
+                });
+            });
+
+            describe('one loader with query params, external-helpers are specified', function () {
+                it('should not change the loader string', function () {
+                    const configuration = {
+                        module: {
+                            rules: 'babel-loader?presets[]=es2015&plugins[]=babel-plugin-external-helpers',
+                        },
+                    };
+
+                    function modify() {
+                        setupLoaders(configuration, pluginOptions);
+                    }
+
+                    assert.doesNotChange(modify, configuration.module, 'rules');
+                });
+            });
+
+            describe('several loaders without query params', function () {
+                it('should add query params to babel-loader only', function () {
+                    const configuration = {
+                        module: {
+                            rules: 'babel-loader!other-loader',
+                        },
+                    };
+                    setupLoaders(configuration, pluginOptions);
+                    const loaders = configuration.module.rules.split('!');
+
+                    assert.lengthOf(loaders, 2, 'number of loaders should remain the same');
+                    assert.sameMembers(loaders, ['babel-loader?plugins[]=external-helpers', 'other-loader']);
+                });
+            });
+
+            describe('several loaders with query params, external-helpers are not specified', function () {
+                it('should inject external-helpers into query params of babel-loader only', function () {
+                    const configuration = {
+                        module: {
+                            rules: 'babel-loader?presets[]=es2015!other-loader?key=val',
+                        },
+                    };
+                    setupLoaders(configuration, pluginOptions);
+                    const loaders = configuration.module.rules.split('!');
+
+                    assert.lengthOf(loaders, 2, 'number of loaders should remain the same');
+                    assert.oneOf('other-loader?key=val', loaders, 'other loaders params should stay intact');
+
+                    const babelLoader = loaders.filter(loaderString => /babel-loader/i.test(loaderString))[0];
+
+                    assert.isString(babelLoader, 'modified rules should contain babel-loader string');
+                    assert.deepEqual(
+                        qs.parse(babelLoader.split('?').pop(), {allowDots: true}),
+                        {plugins: ['external-helpers'], presets: ['es2015']},
+                    );
+                });
+            });
+
+            describe('several loaders with query params, external-helpers are specified', function () {
+                it('should not change the loaders string', function () {
+                    const configuration = {
+                        module: {
+                            rules: 'babel-loader?presets[]=es2015&plugins[]=babel-plugin-external-helpers!other-loader?key=val',
+                        },
+                    };
+
+                    function modify() {
+                        setupLoaders(configuration, pluginOptions);
+                    }
+
+                    assert.doesNotChange(modify, configuration.module, 'rules');
+                });
+            });
+        });
+
+        describe('module.rules is an object', function () {
+            it('should return false ' +
+                'if no "loader", "loaders", "use", "oneOf", "rules" properties', function () {
+                const configuration = {
+                    module: {
+                        rules: {},
+                    },
+                };
+
+                assert.isFalse(setupLoaders(configuration, pluginOptions));
+            });
+
+            describe('"loader" property', function () {
+                it('string: should inject query params to the string', function () {
+                    const configuration = {
+                        module: {
+                            rules: {
+                                loader: 'babel-loader',
+                            },
+                        },
+                    };
+
+                    assert.isTrue(setupLoaders(configuration, pluginOptions));
+                    assert.strictEqual(configuration.module.rules.loader, 'babel-loader?plugins[]=external-helpers');
+                });
+
+                it('object: should return false', function () {
+                    const configuration = {
+                        module: {
+                            rules: {
+                                loader: {
+                                    loader: 'babel-loader',
+                                }
+                            },
+                        },
+                    };
+
+                    assert.isFalse(setupLoaders(configuration, pluginOptions));
+                });
+            });
+
+            describe('"loader" and "options" properties', function () {
+                describe('"options" is a string', function () {
+                    it('should inject external-helpers, if external-helpers are not specified', function () {
+                        const configuration = {
+                            module: {
+                                rules: {
+                                    loader: 'babel-loader',
+                                    options: 'presets[]=es2015',
+                                },
+                            },
+                        };
+
+                        assert.isTrue(setupLoaders(configuration, pluginOptions));
+                        assert.deepEqual(
+                            qs.parse(configuration.module.rules.options, {allowDots: true}),
+                            {plugins: ['external-helpers'], presets: ['es2015']}
+                        );
+                    });
+
+                    it('should not change "options", if external-helpers are specified', function () {
+                        const configuration = {
+                            module: {
+                                rules: {
+                                    loader: 'babel-loader',
+                                    options: 'presets[]=es2015&plugins[]=babel-plugin-external-helpers',
+                                },
+                            },
+                        };
+
+                        function modify() {
+                            setupLoaders(configuration, pluginOptions);
+                        }
+
+                        assert.doesNotChange(modify, configuration.module.rules, 'options');
+                    });
+                });
+
+                describe('"options" is an object', function () {
+                    it('should replace "options" property with a string with injected external-helpers', function () {
+                        const configuration = {
+                            module: {
+                                rules: {
+                                    loader: 'babel-loader',
+                                    options: {
+                                        presets: ['es2015'],
+                                    },
+                                },
+                            },
+                        };
+                        const rules = configuration.module.rules;
+
+                        function modify() {
+                            setupLoaders(configuration, pluginOptions);
+                        }
+
+                        assert.changes(modify, rules, 'options');
+                        assert.isString(rules.options);
+                        assert.match(rules.options, /plugins\[]=external-helpers/);
+                    });
+                });
+            });
+
+            describe('"loaders" property', function () {
+                it('array, no query params: should add query params to babel-loader only', function () {
+                    const configuration = {
+                        module: {
+                            rules: {
+                                loaders: ['other-loader', 'babel-loader'],
+                            },
+                        },
+                    };
+                    const rules = configuration.module.rules;
+                    const target = 'loaders';
+
+                    setupLoaders(configuration, pluginOptions);
+
+                    assert.isArray(rules[target]);
+                    assert.sameMembers(rules[target], ['babel-loader?plugins[]=external-helpers', 'other-loader']);
+                });
+
+                it('array, query params: should inject external-helpers into babel-loader query params', function () {
+                    const configuration = {
+                        module: {
+                            rules: {
+                                loaders: ['other-loader?key=val', 'babel-loader?plugins[]=transform-runtime'],
+                            },
+                        },
+                    };
+                    setupLoaders(configuration, pluginOptions);
+                    const resultLoaders = configuration.module.rules.loaders;
+
+                    assert.lengthOf(resultLoaders, 2, 'number of loaders should remain the same');
+                    assert.oneOf('other-loader?key=val', resultLoaders, 'other loaders params should stay intact');
+
+                    const babelLoader = resultLoaders.filter(loaderString => /babel-loader/i.test(loaderString))[0];
+
+                    assert.isString(babelLoader, 'modified rules should contain babel-loader string');
+                    assert.deepEqual(
+                        qs.parse(babelLoader.split('?').pop(), {allowDots: true}),
+                        {plugins: ['transform-runtime', 'external-helpers']},
+                    );
+                });
+            });
+
+            describe('"use" property', function () {
+                it('should modify and return true if the property contains babel-loader', function () {
+                    const configuration = {
+                        module: {
+                            rules: {
+                                use: 'babel-loader',
+                            },
+                        },
+                    };
+
+                    assert.isTrue(setupLoaders(configuration, pluginOptions));
+                });
+            });
+
+            describe('"oneOf" property', function () {
+                it('should modify and return true if the property contains babel-loader', function () {
+                    const configuration = {
+                        module: {
+                            rules: {
+                                test: /\.js/i,
+                                oneOf: [
+                                    {
+                                        use: 'babel-loader',
+                                    },
+                                    {
+                                        use: 'other-loader',
+                                    },
+                                ],
+                            },
+                        },
+                    };
+
+                    assert.isTrue(setupLoaders(configuration, pluginOptions));
+                });
+            });
+
+            describe('"rules" property', function () {
+                it('should modify and return true if the property contains babel-loader', function () {
+                    const configuration = {
+                        module: {
+                            rules: {
+                                test: /\.js/i,
+                                use: 'other-loader',
+                                rules: {
+                                    test: /\.js/i,
+                                    loader: 'babel-loader',
+                                },
+                            },
+                        },
+                    };
+
+                    assert.isTrue(setupLoaders(configuration, pluginOptions));
+                });
+            });
+        });
+
+        describe('module.rules is an array', function () {
+            describe('rule is a string', function () {
+                it('should inject external-helpers to babel-loader', function () {
+                    const configuration = {
+                        module: {
+                            rules: ['other-loader', 'babel-loader'],
+                        },
+                    };
+                    setupLoaders(configuration, pluginOptions);
+
+                    assert.sameMembers(
+                        configuration.module.rules,
+                        ['babel-loader?plugins[]=external-helpers', 'other-loader']
+                    );
+                })
+            });
+
+            describe('rule is an object', function () {
+                it('should return true if modified some properties', function () {
+                    const configuration = {
+                        module: {
+                            rules: [
+                                {
+                                    test: /\.js$/i,
+                                    loader: 'babel-loader',
+                                },
+                                {
+                                    test: /\.css$/i,
+                                    loader: 'css-loader',
+                                }
+                            ],
+                        },
+                    };
+                    assert.isTrue(setupLoaders(configuration, pluginOptions));
+                });
+            });
+        });
+    });
+
+    describe('babel-loader is specified by alias', function () {
+        it('should find babel-loader regarding alias and inject external-helpers query param', function () {
+            const configuration = {
+                entry: './main.js',
+                module: {
+                    rules: {
+                        test: /\.js$/,
+                        loader: 'babel-alias',
+                    },
+                },
+                resolveLoader: {
+                    alias: {
+                        'babel-alias': 'babel-loader',
+                    }
+                },
+            };
+            const pluginOptions = {aliases: 'babel-alias'};
+
+            assert.isTrue(setupLoaders(configuration, pluginOptions));
+            assert.strictEqual(configuration.module.rules.loader, 'babel-alias?plugins[]=external-helpers');
+        });
     });
 });

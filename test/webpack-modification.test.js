@@ -2,29 +2,44 @@
 
 const chai = require('chai');
 const assert = chai.assert;
-const PluginController = require('../src/plugin/options');
+const optionsController = require('../src/plugin/options-controller');
 const webpackModification = require('../src/webpack-modification');
 
-describe('Babel-loader is not specified in configuration.', function () {
-    it('Throws error according to the "strict" option', function () {
-        const compiler = {
-            options: {
-                entry: './main.js',
-                module: {
-                    loaders: [{test: /\.js$/, loader: 'some-loader'}],
-                },
-            }
-        };
-        PluginController.init(compiler, {strict: true});
+describe('Webpack modification', function () {
+    const compiler = {
+        options: {
+            entry: './main.js',
+            module: {
+                rules: [{test: /\.js$/, loader: 'some-loader'}],
+            },
+        },
+        plugin(name, callback) {
+            callback.call(this);
+        },
+    };
+
+    it('should throw an error in strict mode ("strict" option is true) ' +
+        'if no babel-loader in webpack configuration', function () {
+        optionsController.run(compiler, {strict: true});
 
         assert.throws(function () {
-            webpackModification.modifyConfiguration(compiler);
+            webpackModification.run(compiler);
         }, Error);
+    });
 
-        PluginController.init(compiler, {strict: false});
+    it('should not throw an error not in strict mode ("strict" option is false) ' +
+        'if no babel-loader in webpack configuration', function () {
+        optionsController.run(compiler, {strict: false});
 
         assert.doesNotThrow(function () {
-            webpackModification.modifyConfiguration(compiler);
+            webpackModification.run(compiler);
+        }, Error);
+    });
+
+    it('should throw if webpack configuration "entry" property is a function', function () {
+        compiler.options.entry = function () {};
+        assert.throws(function () {
+            webpackModification.run(compiler);
         }, Error);
     });
 });
