@@ -22,14 +22,12 @@
   },
   "devDependencies": {
     "babel-cli": "^6.26.0",
-    "babel-core": "^6.26.0",
     "babel-preset-env": "^1.6.0",
     "chai": "^4.1.2",
     "mocha": "^3.5.3",
     "webpack": "^3.0.0"
   },
   "peerDependencies": {
-    "babel-core": "6.x",
     "webpack": "3.x"
   },
   "scripts": {
