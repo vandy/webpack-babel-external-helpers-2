@@ -115,31 +115,41 @@ function matchLoader(loaderName, aliases) {
 }
 
 function inject(query) {
-    return qs.stringify(injectPluginParams(getQueryObject(query)), {arrayFormat: 'brackets', encode: false});
+    if (typeof query === 'string') {
+        return injectToString(query);
+    }
+
+    return injectHelpersPlugin(query);
 }
 
-function injectPluginParams(query) {
+function injectToString(query) {
+    return isJsonString(query) ?
+        injectToStringJson(query) :
+        injectToStringQuery(query);
+}
+
+function isJsonString(queryString) {
+    return queryString.charAt(0) === '{' && queryString.charAt(queryString.length - 1) === '}';
+}
+
+function injectToStringJson(query) {
+    return JSON.stringify(injectHelpersPlugin(JSON.parse(query)));
+}
+
+function injectToStringQuery(query) {
+    return qs.stringify(injectHelpersPlugin(parseQuery(query)), {arrayFormat: 'brackets', encode: false});
+}
+
+function parseQuery(queryString) {
+    return qs.parse(queryString, {allowDots: true});
+}
+
+function injectHelpersPlugin(query) {
     const plugins = Array.isArray(query.plugins) ? query.plugins : [];
-    if (!plugins.some(pluginName => BABEL_PLUGIN_REGEXP.test(pluginName))) {
+    if (!plugins.some(plugin => BABEL_PLUGIN_REGEXP.test(Array.isArray(plugin) ? plugin[0] : plugin))) {
         plugins.push('external-helpers');
     }
     query.plugins = plugins.filter(Boolean);
 
     return query;
-}
-
-function getQueryObject(query) {
-    if (typeof query === 'string') {
-        return parseQueryString(query);
-    }
-
-    return query;
-}
-
-function parseQueryString(queryString) {
-    if (queryString.charAt(0) === '{' && queryString.charAt(queryString.length - 1) === '}') {
-        return JSON.parse(queryString);
-    }
-
-    return qs.parse(queryString, {allowDots: true});
 }
