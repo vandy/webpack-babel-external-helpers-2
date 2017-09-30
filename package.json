@@ -21,15 +21,13 @@
     "symbol": "^0.3.0"
   },
   "devDependencies": {
-    "babel-cli": "^6.24.1",
-    "babel-core": "^6.18.0",
-    "babel-preset-env": "^1.4.0",
+    "babel-cli": "^6.26.0",
+    "babel-preset-env": "^1.6.0",
     "chai": "^4.1.2",
     "mocha": "^3.5.3",
     "webpack": "^2.4.0"
   },
   "peerDependencies": {
-    "babel-core": "6.x",
     "webpack": "2.x"
   },
   "scripts": {
