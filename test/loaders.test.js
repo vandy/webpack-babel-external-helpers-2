@@ -251,7 +251,9 @@ describe('Webpack configuration modification: babel-loader options', function ()
 
             describe('"loader" and "options" properties', function () {
                 describe('"options" is a string', function () {
-                    it('should inject external-helpers, if external-helpers are not specified', function () {
+                    it.skip('json string: should inject "external-helpers" if missing');
+
+                    it('query string: should inject "external-helpers", if missing', function () {
                         const configuration = {
                             module: {
                                 rules: {
@@ -268,7 +270,7 @@ describe('Webpack configuration modification: babel-loader options', function ()
                         );
                     });
 
-                    it('should not change "options", if external-helpers are specified', function () {
+                    it('should not change "options", if "external-helpers" are specified', function () {
                         const configuration = {
                             module: {
                                 rules: {
@@ -287,7 +289,7 @@ describe('Webpack configuration modification: babel-loader options', function ()
                 });
 
                 describe('"options" is an object', function () {
-                    it('should replace "options" property with a string with injected external-helpers', function () {
+                    it('should stay an object', function () {
                         const configuration = {
                             module: {
                                 rules: {
@@ -298,15 +300,28 @@ describe('Webpack configuration modification: babel-loader options', function ()
                                 },
                             },
                         };
-                        const rules = configuration.module.rules;
+                        setupLoaders(configuration, pluginOptions);
 
-                        function modify() {
-                            setupLoaders(configuration, pluginOptions);
-                        }
+                        assert.isObject(configuration.module.rules.options);
+                    });
 
-                        assert.changes(modify, rules, 'options');
-                        assert.isString(rules.options);
-                        assert.match(rules.options, /plugins\[]=external-helpers/);
+                    it('should inject "external-helpers" to plugins array if missing', function () {
+                        const configuration = {
+                            module: {
+                                rules: {
+                                    loader: 'babel-loader',
+                                    options: {
+                                        presets: ['es2015'],
+                                    },
+                                },
+                            },
+                        };
+                        setupLoaders(configuration, pluginOptions);
+                        const options = configuration.module.rules.options;
+
+                        assert.property(options, 'plugins');
+                        assert.isArray(options.plugins);
+                        assert.oneOf('external-helpers', options.plugins);
                     });
                 });
             });
