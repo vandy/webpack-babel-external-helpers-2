@@ -88,7 +88,7 @@ function getModuleIdentifier(dependency) {
 }
 
 function link(topLevelModule, module, dependecy) {
-    module.issuer = topLevelModule.identifier();
+    module.issuer = topLevelModule;
     dependecy.module = module;
     module.addReason(topLevelModule, dependecy);
 }

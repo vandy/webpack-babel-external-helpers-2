@@ -186,7 +186,7 @@ describe('Webpack configuration modification: babel-loader options', function ()
                     assert.isString(babelLoader, 'modified rules should contain babel-loader string');
                     assert.deepEqual(
                         qs.parse(babelLoader.split('?').pop(), {allowDots: true}),
-                        {plugins: ['external-helpers'], presets: ['es2015']},
+                        {plugins: ['external-helpers'], presets: ['es2015']}
                     );
                 });
             });
@@ -363,7 +363,7 @@ describe('Webpack configuration modification: babel-loader options', function ()
                     assert.isString(babelLoader, 'modified rules should contain babel-loader string');
                     assert.deepEqual(
                         qs.parse(babelLoader.split('?').pop(), {allowDots: true}),
-                        {plugins: ['transform-runtime', 'external-helpers']},
+                        {plugins: ['transform-runtime', 'external-helpers']}
                     );
                 });
             });
