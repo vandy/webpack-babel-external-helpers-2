@@ -13,10 +13,16 @@ describe('Webpack modification', function () {
                 rules: [{test: /\.js$/, loader: 'some-loader'}],
             },
         },
-        plugin(name, callback) {
+        hooks: {},
+    };
+    const tapable = {
+        tap: function (pluginName, callback) {
             callback.call(this);
         },
     };
+    ['environment', 'afterEnvironment'].forEach(eventName => {
+        compiler.hooks[eventName] = tapable;
+    });
 
     it('should throw an error in strict mode ("strict" option is true) ' +
         'if no babel-loader in webpack configuration', function () {

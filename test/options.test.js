@@ -27,7 +27,11 @@ describe('Plugin Options Controller', function () {
         it('should be verified to have the correct type', function () {
             const compiler = {
                 options: {},
-                plugin() {},
+                hooks: {
+                    environment: {
+                        tap: () => {},
+                    },
+                },
             };
 
             assert.throws(function () {
@@ -66,8 +70,12 @@ describe('Plugin Options Controller', function () {
         describe('Whitelist', function () {
             const compiler = {
                 options: {},
-                plugin(name, callback) {
-                    callback.call(this);
+                hooks: {
+                    environment: {
+                        tap: function (pluginName, callback) {
+                            callback.call(this);
+                        },
+                    }
                 },
             };
 
@@ -108,8 +116,12 @@ describe('Plugin Options Controller', function () {
         describe('Entries', function () {
             const compiler = {
                 options: {},
-                plugin(name, callback) {
-                    callback.call(this);
+                hooks: {
+                    environment: {
+                        tap: function (pluginName, callback) {
+                            callback.call(this);
+                        },
+                    }
                 },
             };
 
