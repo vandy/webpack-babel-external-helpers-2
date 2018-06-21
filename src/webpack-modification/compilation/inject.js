@@ -7,21 +7,21 @@ const NullFactory = require('webpack/lib/NullFactory');
 const moduleIdentifierSymbol = Symbol('topLevelModuleIdentifier');
 
 module.exports = function (compiler, pluginOptions) {
-    compiler.plugin('compilation', function (compilation) {
+    compiler.hooks.compilation.tap('webpackBabelExternalHelpersPlugin', function (compilation) {
         inject(compilation, pluginOptions);
     });
 };
 
 function inject(compilation, pluginOptions) {
     compilation.dependencyFactories.set(SingleEntryDependencyWrapper, new NullFactory());
-    compilation.plugin('seal', function () {
-        getChunks(this, pluginOptions.entries)
-            .forEach(chunk => injectHelpers(this, chunk.module, pluginOptions.whitelist));
+    compilation.hooks.seal.tap('webpackBabelExternalHelpersPlugin', function () {
+        getChunks(compilation, pluginOptions.entries)
+            .forEach(chunk => injectHelpers(compilation, chunk.module, pluginOptions.whitelist));
     });
 }
 
 function getChunks(compilation, onlyEntries) {
-    const chunks = compilation.preparedChunks;
+    const chunks = compilation._preparedEntrypoints;
     if (onlyEntries.length < 1) {
         return chunks;
     }
@@ -31,9 +31,9 @@ function getChunks(compilation, onlyEntries) {
 
 function injectHelpers(compilation, topLevelModule, babelHelpersWhitelist) {
     const dependency = getDependency(topLevelModule);
-    const [module, fromCache] = addModule(compilation, createHelpersModule(dependency, babelHelpersWhitelist));
+    const {module, build: shouldBuild} = compilation.addModule(createHelpersModule(dependency, babelHelpersWhitelist));
     link(topLevelModule, module, dependency);
-    if (!fromCache) {
+    if (shouldBuild) {
         topLevelModule.dependencies.unshift(dependency);
         compilation.buildModule(module, false, topLevelModule, [dependency], error => {
             if (error) {
@@ -41,18 +41,6 @@ function injectHelpers(compilation, topLevelModule, babelHelpersWhitelist) {
             }
         });
     }
-}
-
-function addModule(compilation, module) {
-    const added = compilation.addModule(module);
-    const cached = added !== true;
-    if (added === false) {
-        module = compilation.getModule(module);
-    } else if (added instanceof RawModule) {
-        module = added;
-    }
-
-    return [module, cached];
 }
 
 function getDependency(module) {

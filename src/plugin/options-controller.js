@@ -6,8 +6,8 @@ const pluginOptions = new DefaultOptions();
 
 exports.run = function (compiler, userOptions = {}) {
     verify(userOptions);
-    compiler.plugin('environment', function () {
-        update(this.options, userOptions);
+    compiler.hooks.environment.tap('webpackBabelExternalHelpersPlugin', function () {
+        update(compiler.options, userOptions);
     });
 };
 

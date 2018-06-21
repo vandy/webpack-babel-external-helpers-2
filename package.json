@@ -1,7 +1,7 @@
 {
   "name": "webpack-babel-external-helpers-2",
   "author": "Roman Sukhorukov",
-  "version": "3.1.0",
+  "version": "4.0.0-rc1",
   "description": "Webpack plugin for automatically adding babel-external-helpers to entries when using babel-loader.",
   "keywords": [
     "webpack",
@@ -17,18 +17,18 @@
   ],
   "dependencies": {
     "babel-plugin-external-helpers": "^6.8.0",
-    "qs": "^6.2.1",
+    "qs": "^6.5.2",
     "symbol": "^0.3.0"
   },
   "devDependencies": {
     "babel-cli": "^6.26.0",
-    "babel-preset-env": "^1.6.0",
+    "babel-preset-env": "^1.7.0",
     "chai": "^4.1.2",
     "mocha": "^3.5.3",
-    "webpack": "^3.0.0"
+    "webpack": "^4.0.0"
   },
   "peerDependencies": {
-    "webpack": "3.x"
+    "webpack": "4.x"
   },
   "scripts": {
     "test": "mocha",

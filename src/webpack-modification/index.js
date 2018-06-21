@@ -3,7 +3,7 @@ const modifyConfiguration = require('./configuration');
 const pluginOptionsController = require('../plugin/options-controller');
 
 exports.run = function (compiler) {
-    compiler.plugin('after-environment', function () {
+    compiler.hooks.afterEnvironment.tap('webpackBabelExternalHelpersPlugin', function () {
         ensurePluginSupports(compiler.options);
         modify(compiler);
     });
