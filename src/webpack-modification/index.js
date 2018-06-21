@@ -11,7 +11,7 @@ exports.run = function (compiler) {
 
 function ensurePluginSupports(configuration) {
     if (typeof configuration.entry === 'function') {
-        throw new Error('The plugin doesn\'t work with the entry property being a function.');
+        throw new Error(`The plugin doesn't work with the entry property being a function.`);
     }
 }
 

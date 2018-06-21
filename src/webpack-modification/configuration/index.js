@@ -25,5 +25,5 @@ function setupConfigurationLoaders(configuration, pluginOptions) {
 }
 
 function throwError(msg) {
-    throw new Error(`Webpack configuration wasn\'t modified. ${msg}`);
+    throw new Error(`Webpack configuration wasn't modified. ${msg}`);
 }
